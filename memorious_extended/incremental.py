@@ -29,7 +29,7 @@ def should_skip_incremental(context, data, config=None):
             xpath: ...
             urlpattern: ...
         target:
-            store
+            store (name of target stage, default "store")
 
     (can also be passed in as dict for config parameter)
     """
