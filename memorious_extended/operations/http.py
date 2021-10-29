@@ -15,7 +15,10 @@ def _get_url(context, data):
     get url from context params or data dict,
     log warning for no url found
     """
-    url = context.params.get("url", data.get("url"))
+    url = context.params.get("url")
+    if url is not None:
+        return url.format(**data)
+    url = data.get("url")
     if url is None:
         context.log.warning("No url found.")
     return url
