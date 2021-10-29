@@ -2,9 +2,20 @@ from banal import ensure_dict
 from furl import furl
 
 from .util import get_value_from_xp as x
+from .util import re_first
 
 
-def get_paginated_url(context, data, url):
+def _get_x_int(html, value):
+    if isinstance(value, str):  # xpath
+        value = x(html, value)
+        value = re_first(r"\d+", value)
+    return int(value)
+
+
+def get_paginated_url(context, data, url=None):
+    url = url or data.get("url")
+    if url is None:
+        return
     if "pagination" in context.params:
         pagination = ensure_dict(context.params["pagination"])
         if "param" in pagination:
@@ -23,6 +34,7 @@ def paginate(context, data, html):
         pagination:
             total:    # xpath to value or direct int value
             per_page: # xpath to value or direct int value
+            param:    # name of url get param to manipulate page
     handle:
         next_page: fetch
         store: store
@@ -30,14 +42,21 @@ def paginate(context, data, html):
     if "pagination" in context.params:
         pagination = ensure_dict(context.params["pagination"])
         page = data.get("page", 1)
+        should_emit = False
+
         if "total" in pagination and "per_page" in pagination:
-            total = pagination["total"]
-            per_page = pagination["per_page"]
-            if isinstance(total, str):  # xpath
-                total = int(x(html, total))
-            if isinstance(per_page, str):  # xpath
-                per_page = int(x(html, per_page))
+            total = _get_x_int(html, pagination["total"])
+            per_page = _get_x_int(html, pagination["per_page"])
             if page * per_page < total:
-                context.log.info(f"Next page: {page + 1}")
-                context.emit("next_page", data={**data, **{"page": page + 1}})
-                return
+                should_emit = True
+
+        if "total_pages" in pagination:
+            total_pages = _get_x_int(html, pagination["total_pages"])
+            if page < total_pages:
+                should_emit = True
+
+        if should_emit:
+            context.log.info(f"Next page: {page + 1}")
+            data = {**data, **{"page": page + 1}}
+            data["url"] = get_paginated_url(context, data)
+            context.emit("next_page", data=data)
