@@ -8,7 +8,7 @@ from servicelayer.cache import make_key
 from .util import get_value_from_xp as x
 
 
-SKIP_INCREMENTAL = env.as_bool("MEMORIOUS_SKIP_INCREMENTAL", True)
+SKIP_INCREMENTAL = env.to_bool("MEMORIOUS_SKIP_INCREMENTAL", True)
 
 
 def should_skip_incremental(context, data, config=None):
@@ -25,11 +25,11 @@ def should_skip_incremental(context, data, config=None):
     params:
       skip_incremental:
         key:  # generate tag key based on xpath, data dict or urlpattern
-            data: ... (default: reference)
+            data: ... (default: url)
             xpath: ...
             urlpattern: ...
         target:
-            stage: store
+            store
 
     (can also be passed in as dict for config parameter)
     """
@@ -38,7 +38,7 @@ def should_skip_incremental(context, data, config=None):
 
     config = ensure_dict(config or context.params.get("skip_incremental"))
     get_key = ensure_dict(config.get("key"))
-    identifier = data.get(get_key.get("data", "reference"))
+    identifier = data.get(get_key.get("data", "url"))
     if identifier is None:
         urlpattern = get_key.get("urlpattern")
         if urlpattern is not None:
@@ -53,10 +53,9 @@ def should_skip_incremental(context, data, config=None):
                 identifier = x(xpath, res.html)
 
     if identifier is not None:
-        target = config.get("target", {"stage": "store"})  # FIXME
-        target_key = make_key("skip_incremental", identifier, target["stage"])
-        # set key regardless of INCREMENTAL setting for next run
-        data["skip_incremental"] = {"target": target["stage"], "key": target_key}
+        target = config.get("target", "store")
+        target_key = make_key("skip_incremental", identifier, target)
+        data["skip_incremental"] = {"target": target, "key": target_key}
         if not settings.INCREMENTAL or not SKIP_INCREMENTAL:
             return False
         if context.check_tag(target_key):
