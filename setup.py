@@ -18,7 +18,7 @@ setup(
     packages=find_packages(exclude=["ez_setup", "tests"]),
     namespace_packages=[],
     zip_safe=False,
-    install_requires=["memorious", "furl", "jq", "ipdb", "jinja2"],
+    install_requires=["memorious", "furl", "ipdb", "jinja2"],
     entry_points={
         # "console_scripts": ["memorious = memorious.cli:main"],
         # "memorious_extended.operations": [
